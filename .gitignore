@@ -1,0 +1,19 @@
+#sbw project
+temp
+data
+logs
+.env
+.vscode
+config-dev.js
+
+# package directories
+node_modules
+jspm_packages
+
+# Serverless directories
+.serverless
+
+# Credentials
+
+credentials
+credentials*

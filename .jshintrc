@@ -1,0 +1,12 @@
+{
+  "esversion": 9,
+  "node": true,
+  "validthis": true,
+  "sub": true,
+  "laxbreak": true,
+  "globals": {
+    "test": true,
+    "expect": true
+  },
+  "-W083": false
+}

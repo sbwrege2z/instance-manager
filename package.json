@@ -1,0 +1,20 @@
+{
+  "name": "aws-instance-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main",
+  "scripts": {
+    "start": "node ./src/index",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Shannon Wrege",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.928.0",
+    "dotenv": "^10.0.0",
+    "es6-promisify": "^7.0.0",
+    "ora": "^5.4.1",
+    "prompts": "^2.4.1"
+  },
+  "devDependencies": {}
+}
