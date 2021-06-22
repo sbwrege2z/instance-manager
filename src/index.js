@@ -1,16 +1,16 @@
 'use strict';
 
-const dotenv = require('dotenv');
-dotenv.config();
-
+const ini = require('ini');
 const ora = require('ora');
 const prompt = require('./lib/prompts');
 const fileUtils = require('./lib/file-utils');
 const aws = require('./lib/aws-utils');
+const { forceDirectories } = require('./lib/file-utils');
 
-const { writeFile } = fileUtils;
+const { readFile, writeFile, fileExists } = fileUtils;
 
-const regions = (process.env.regions || 'us-east-1,us-east-2,us-west-1,us-west-2').split(',');
+let config, iniFile, profile;
+let regions = ['us-east-1', 'us-east-2', 'us-west-1', 'us-west-2'];
 
 const capitalize = (s) => {
   if (typeof s !== 'string') return '';
@@ -116,32 +116,87 @@ async function chooseOperation({ instance }) {
 }
 
 async function configureRegions() {
-  const allRegions = await aws.listRegions();
-  const options = {
-    type: 'autocompleteMultiselect',
-    name: 'value',
-    message: 'Which regions do you want to display?',
-    choices: allRegions.map((region) => {
-      return { title: region, value: region, selected: regions.indexOf(region) >= 0 };
-    }),
-    hint: '- Space to select. Return to submit',
-    instructions: false,
-  };
-  let choices = await prompt.generic(options);
-  if (choices && choices.value && choices.value.length > 0) {
-    choices = choices.value;
-    while (regions.length > 0) regions.pop();
-    for (const choice of choices) regions.push(choice);
+  try {
+    const allRegions = await aws.listRegions();
+    const options = {
+      type: 'autocompleteMultiselect',
+      name: 'value',
+      message: 'Which regions do you want to display?',
+      choices: allRegions.map((region) => {
+        return { title: region, value: region, selected: regions.indexOf(region) >= 0 };
+      }),
+      hint: '- Space to select. Return to submit',
+      instructions: false,
+    };
+    let choices = await prompt.generic(options);
+    if (choices && choices.value && choices.value.length > 0) {
+      choices = choices.value;
+      regions = choices;
+    }
+    await saveRegions();
+  } catch (error) {
+    const message = error.message || error;
+    console.error(message + '\n');
   }
-  await saveRegions();
 }
 
 async function saveRegions() {
-  const filename = './.env';
-  await writeFile(filename, 'regions=' + regions.join(','));
+  iniFile[profile].regions = regions.join(',');
+  const filename = './data/config';
+  await writeFile(filename, ini.stringify(iniFile));
+}
+
+async function verifyCredentials(config) {
+  let { awsProfile, accessKeyId, secretAccessKey } = config;
+  if (accessKeyId && secretAccessKey) return aws.config({ accessKeyId, secretAccessKey });
+  ({ AWS_ACCESS_KEY_ID: accessKeyId, AWS_SECRET_ACCESS_KEY: secretAccessKey } = process.env);
+  if (accessKeyId && secretAccessKey) return aws.config({ accessKeyId, secretAccessKey });
+  if (awsProfile) return aws.config({ profile: awsProfile });
+
+  //const home = process.env.NVM_DIR.replace(/\/\.nvm$/, '/.aws').trimRight('/');
+  const home = '/root/.aws';
+  const filename = home + '/credentials';
+  //console.log(filename);
+  if (!(await fileExists(filename))) return;
+  let credentials = await readFile(filename);
+  if (!credentials) return;
+  credentials = ini.parse(credentials.toString());
+  const profiles = Object.keys(credentials || {});
+  if (profiles.length === 1) profile = profiles[0];
+  else if (profiles.length > 1) {
+    awsProfile = await prompt.select({
+      message: `Select an AWS profile:`,
+      choices: profiles,
+    });
+  }
+  if (awsProfile) aws.config({ profile: awsProfile });
+}
+
+async function initialize() {
+  if (await fileExists('./data/config')) iniFile = await readFile('./data/config');
+  if (iniFile) iniFile = ini.parse(iniFile.toString());
+  else iniFile = { default: {} };
+  const profiles = Object.keys(iniFile);
+  profile = 'default';
+  if (profiles.length === 1) profile = profiles[0];
+  else if (profiles.length > 1) {
+    profile = await prompt.select({
+      message: `Select an profile:`,
+      choices: profiles,
+    });
+    console.log(profile);
+  }
+  config = Object.assign({}, iniFile.default, iniFile[profile]);
+  if (config.regions) config.regions = config.regions.split(',');
+  await verifyCredentials(config);
 }
 
 (async () => {
+  //console.log(JSON.stringify(process.env, null, 2));
+  //process.exit(0);
+  await initialize();
+  regions = config.regions || regions;
+
   while (true) {
     const region = await chooseRegion(regions);
     if (!region) {
@@ -172,7 +227,8 @@ async function saveRegions() {
         }
       }
     } catch (error) {
-      console.error(error.message || error);
+      const message = error.message || error;
+      console.error(message + '\n');
     }
   }
 })();
