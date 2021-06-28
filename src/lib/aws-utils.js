@@ -13,6 +13,7 @@ module.exports = {
   reboot,
   state,
   listRegions,
+  config,
 };
 
 function ec2Handle({ region = defaultRegion }) {
@@ -131,4 +132,11 @@ async function listRegions(params) {
   );
   //console.log(JSON.stringify(regions, null, 2));
   return regions;
+}
+
+function config({ profile, accessKeyId, secretAccessKey }) {
+  let credentials;
+  if (accessKeyId && secretAccessKey) credentials = { accessKeyId, secretAccessKey };
+  else if (profile) credentials = new AWS.SharedIniFileCredentials({ profile });
+  if (credentials) AWS.config.credentials = credentials;
 }
