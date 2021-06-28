@@ -81,7 +81,7 @@ async function performOperation({ instance, operation }) {
     //console.log(JSON.stringify(data, null, 2));
     spinner.start();
     let current = '';
-    for (let i = 1; i <= 60; i++) {
+    for (let i = 1; i <= 10; i++) {
       const state = await aws.state({ instance });
       if (current !== state) {
         current = state;
