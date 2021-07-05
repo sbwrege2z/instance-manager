@@ -12,7 +12,7 @@
   "author": "Shannon Wrege",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.928.0",
+    "aws-sdk": "^2.939.0",
     "es6-promisify": "^7.0.0",
     "ini": "^2.0.0",
     "ora": "^5.4.1",
