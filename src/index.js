@@ -18,12 +18,14 @@ const capitalize = (s) => {
 };
 
 async function chooseInstance({ region, instances }) {
+  //console.log(JSON.stringify(instances, null, 2));
   let selection = await prompt.select({
     message: `Select an ${region} instance:`,
-    choices: instances.map(({ name, state, id }, index) => {
+    choices: instances.map((instance, index) => {
+      const { name, state, id, publicIP, privateIP } = instance;
       return {
         title: `${name} (${state})`,
-        description: id,
+        description: `${id} - ${publicIP} / ${privateIP}`,
         value: index,
       };
     }),
@@ -42,7 +44,7 @@ async function chooseRegion(regions) {
 }
 
 async function lookupInstances({ region }) {
-  const instances = (await aws.instances({ region })) || [];
+  const instances = (await aws.ec2.instances({ region })) || [];
   instances.sort(
     (a, b) =>
       a.state.localeCompare(b.state) || a.name.toLowerCase().localeCompare(b.name.toLowerCase())
@@ -77,12 +79,12 @@ async function performOperation({ instance, operation }) {
     let waitFor = /^running: ok/;
     if (operation === 'stop') waitFor = /^stopped/;
     if (operation === 'refresh') waitFor = /./;
-    else await aws[operation]({ instance });
+    else await aws.ec2[operation]({ instance });
     //console.log(JSON.stringify(data, null, 2));
     spinner.start();
     let current = '';
     for (let i = 1; i <= 10; i++) {
-      const state = await aws.state({ instance });
+      const state = await aws.ec2.state({ instance });
       if (current !== state) {
         current = state;
         console.log(' ' + current);
@@ -117,7 +119,7 @@ async function chooseOperation({ instance }) {
 
 async function configureRegions() {
   try {
-    const allRegions = await aws.listRegions();
+    const allRegions = await aws.ec2.listRegions();
     const options = {
       type: 'autocompleteMultiselect',
       name: 'value',

@@ -1,10 +1,7 @@
 'use strict';
 
 const AWS = require('aws-sdk');
-
-const regions = {};
-const apiVersion = '2016-11-15';
-const defaultRegion = 'us-east-1';
+const awsVars = require('./aws-vars');
 
 module.exports = {
   instances,
@@ -13,8 +10,9 @@ module.exports = {
   reboot,
   state,
   listRegions,
-  config,
 };
+
+const { regions, apiVersion, defaultRegion } = awsVars;
 
 function ec2Handle({ region = defaultRegion }) {
   if (!regions[region]) regions[region] = { name: region };
@@ -58,8 +56,8 @@ async function instances({ region, params }) {
       let {
         InstanceId: id,
         InstanceType: type,
-        PrivateIpAddress: privateIP,
-        PublicIpAddress: publicIP,
+        PrivateIpAddress: privateIP = '',
+        PublicIpAddress: publicIP = '',
         State: state,
         Tags: tags,
       } = instance;
@@ -69,6 +67,7 @@ async function instances({ region, params }) {
       instances.push({ name, id, state, type, privateIP, publicIP, region });
     }
   }
+  //console.log(JSON.stringify(instances, null, 2));
   return instances;
 }
 
@@ -132,11 +131,4 @@ async function listRegions(params) {
   );
   //console.log(JSON.stringify(regions, null, 2));
   return regions;
-}
-
-function config({ profile, accessKeyId, secretAccessKey }) {
-  let credentials;
-  if (accessKeyId && secretAccessKey) credentials = { accessKeyId, secretAccessKey };
-  else if (profile) credentials = new AWS.SharedIniFileCredentials({ profile });
-  if (credentials) AWS.config.credentials = credentials;
 }
