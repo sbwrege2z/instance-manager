@@ -4,8 +4,10 @@
   "description": "",
   "main": "src/main",
   "scripts": {
-    "start": "node ./src/index",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./src/ec2-cli",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "cfn": "node ./src/cfn-cli",
+    "ecs": "node ./src/ec2-cli"
   },
   "author": "Shannon Wrege",
   "license": "ISC",
