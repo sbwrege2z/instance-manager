@@ -6,3 +6,7 @@ const awsVars = require('./aws-vars');
 module.exports = {};
 
 const { regions, apiVersion, defaultRegion } = awsVars;
+
+//describeStacks
+//listExports
+//waitFor
